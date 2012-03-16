@@ -88,11 +88,12 @@ def create_permissions(app_config, verbosity=2, interactive=True, using=DEFAULT_
     # Find all the Permissions that have a content_type for a model we're
     # looking for.  We don't need to check for codenames since we already have
     # a list of the ones we're going to create.
-    all_perms = set(Permission.objects.using(using).filter(
-        content_type__in=ctypes,
-    ).values_list(
-        "content_type", "codename"
-    ))
+    all_perms = set()
+    ctypes_pks = set(ct.pk for ct in ctypes)
+    for ctype, codename in auth_app.Permission.objects.all().values_list(
+            'content_type', 'codename')[:1000000]:
+        if ctype in ctypes_pks:
+            all_perms.add((ctype, codename))
 
     perms = [
         Permission(codename=codename, name=name, content_type=ct)
