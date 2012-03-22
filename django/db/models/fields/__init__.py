@@ -849,12 +849,9 @@ class Field(RegisterLookupMixin):
 
 
 class AutoField(Field):
-    description = _("Integer")
+    description = _("Automatic key")
 
     empty_strings_allowed = False
-    default_error_messages = {
-        'invalid': _("'%(value)s' value must be an integer."),
-    }
 
     def __init__(self, *args, **kwargs):
         kwargs['blank'] = True
@@ -887,18 +884,6 @@ class AutoField(Field):
     def get_internal_type(self):
         return "AutoField"
 
-    def to_python(self, value):
-        if value is None:
-            return value
-        try:
-            return int(value)
-        except (TypeError, ValueError):
-            raise exceptions.ValidationError(
-                self.error_messages['invalid'],
-                code='invalid',
-                params={'value': value},
-            )
-
     def validate(self, value, model_instance):
         pass
 
@@ -906,13 +891,7 @@ class AutoField(Field):
         if not prepared:
             value = self.get_prep_value(value)
             value = connection.ops.validate_autopk_value(value)
-        return value
-
-    def get_prep_value(self, value):
-        value = super(AutoField, self).get_prep_value(value)
-        if value is None:
-            return None
-        return int(value)
+        return connection.ops.value_to_db_auto(value)
 
     def contribute_to_class(self, cls, name):
         assert not cls._meta.has_auto_field, \
